@@ -14,6 +14,14 @@ public class RecipeDTO
     public IList<ApplianceDTO> Appliances { get; set; }
     public IList<CookwareDTO> Cookware { get; set; }
 
+    public RecipeDTO()
+    {
+        Ingredients = new List<IngredientDTO>();
+        Steps = new List<RecipeStepDTO>();
+        Appliances = new List<ApplianceDTO>();
+        Cookware = new List<CookwareDTO>();
+    }
+
     public RecipeDTO(string recipeName, 
         string recipeDescription, 
         int totalServings, 

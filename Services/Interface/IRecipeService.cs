@@ -6,5 +6,5 @@ public interface IRecipeService
 {
     public RecipeDTO GetRecipeFromName(string name);
     public RecipeDTO GetRecipeFromId(Guid id);
-
+    public bool InsertRecipe(RecipeDTO recipeDTO);
 }

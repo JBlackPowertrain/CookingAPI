@@ -25,6 +25,11 @@ public class RecipeService : IRecipeService
         return GetRecipe(_recipeDatabaseService.GetRecipeFromId(id));
     }
 
+    public bool InsertRecipe(RecipeDTO recipeDTO)
+    {
+        return _recipeDatabaseService.InsertRecipe(recipeDTO);
+    }
+
     protected RecipeDTO GetRecipe(RecipeDAO recipe)
     {
         RecipeDTO _recipe = new RecipeDTO(recipe);

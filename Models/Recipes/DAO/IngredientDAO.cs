@@ -4,9 +4,8 @@ public class IngredientDAO
 {
     public Guid IngredientId { get; set; }
     public string IngredientName { get; set; }
-    public string IngredientDescription { get; set; }
     public string Status { get; set; }
-    public int Count { get; set; }
+    public float Count { get; set; }
     public string Size { get; set; }
     public string SizeUnit { get; set; }
     public int ApproxCalories { get; set; }

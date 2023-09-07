@@ -26,14 +26,14 @@ public interface IBigCatCookingDb
 
     public Databases ConnectionStrings { get; }
 
-    public List<T> Get<T>(string dbConnection, string storedProcedure, IEnumerable<KeyValuePair<string, object>> parameters, Type type);
-    public T GetSingle<T>(string dbConnection, string storedProcedure, IEnumerable<KeyValuePair<string, object>> parameters, Type type);
-    public bool Insert(string dbConnection, string storedProcedure, IEnumerable<KeyValuePair<string, object>> parameters);
+    public List<T> Get<T>(string dbConnection, string storedProcedure, Dictionary<string, object> parameters, Type type);
+    public T GetSingle<T>(string dbConnection, string storedProcedure, Dictionary<string, object> parameters, Type type);
+    public bool Insert(string dbConnection, string storedProcedure, Dictionary<string, object> parameters);
 
-    public string InsertGetId(string dbConnection, string storedProcedure, IEnumerable<KeyValuePair<string, object>> parameters);
+    public Guid InsertGetId(string dbConnection, string storedProcedure, Dictionary<string, object> parameters);
 
-    public bool Delete(string dbConnection, string storedProcedure, IEnumerable<KeyValuePair<string, object>> parameters);
+    public bool Delete(string dbConnection, string storedProcedure, Dictionary<string, object> parameters);
 
-    public bool BulkInsertTransactions(string dbConnection, IEnumerable<string> storedProcedures, IEnumerable<IEnumerable<KeyValuePair<string, object>>> parameters);
+    public bool BulkInsertTransactions(string dbConnection, IEnumerable<string> storedProcedures, IEnumerable<Dictionary<string, object>> parameters);
     public bool CommitBulkInsert(IList<SqlCommand> commands);
 }

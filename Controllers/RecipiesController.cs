@@ -1,4 +1,5 @@
-﻿using BigCatCookinAPI.Models.GPT.GPTResponses.GPTRecipes;
+﻿using BigCatCookinAPI.Models.GPT;
+using BigCatCookinAPI.Models.GPT.GPTResponses.GPTRecipes;
 using BigCatCookinAPI.Services.Interface;
 using BigCatCookinAPI.Utilities;
 using Microsoft.AspNetCore.Mvc;
@@ -45,6 +46,8 @@ public class RecipiesController : Controller
                 cookware,
                 ingredients,
                 previousDishes);
+
+        _recipeService.InsertRecipe(GPTUtilities.GPTRecipeToDTO(resp));
 
         return StatusCode(StatusCodes.Status200OK, resp);
     }

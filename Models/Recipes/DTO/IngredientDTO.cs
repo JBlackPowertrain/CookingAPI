@@ -5,9 +5,8 @@ namespace BigCatCookinAPI.Models.Recipes.DTO;
 public class IngredientDTO
 {
     public string IngredientName { get; set; }
-    public string IngredientDescription { get; set; }
     public string Status { get; set; }
-    public int Count { get; set; }
+    public float Count { get; set; }
     public string Size { get; set; }
     public string SizeUnit { get; set; }
     public int ApproxCalories { get; set; }
@@ -19,16 +18,15 @@ public class IngredientDTO
     public float ApproximateSodium { get; set; }
 
     public IngredientDTO(string ingredientName, 
-        string ingredientDescription, 
-        string status, string size, string sizeUnit, 
+        float count, string status, string size, string sizeUnit, 
         int approxCalories, float approximateProtein, 
         float approximateFat, float approximateTotalCarbs, 
         float approximateFiberCarbs, float approximateNetCarbs, 
         float approximateSodium)
     {
         IngredientName = ingredientName;
-        IngredientDescription = ingredientDescription;
         Status = status;
+        Count = count; 
         Size = size;
         SizeUnit = sizeUnit;
         ApproxCalories = approxCalories;
@@ -43,8 +41,8 @@ public class IngredientDTO
     public IngredientDTO(IngredientDAO dao)
     {
         IngredientName = dao.IngredientName;
-        IngredientDescription = dao.IngredientDescription;
         Status = dao.Status;
+        Count = dao.Count;
         Size = dao.Size;
         SizeUnit = dao.SizeUnit;
         ApproxCalories = dao.ApproxCalories;

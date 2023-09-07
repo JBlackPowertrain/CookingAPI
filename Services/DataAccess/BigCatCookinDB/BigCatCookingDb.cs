@@ -1,6 +1,8 @@
 ﻿using BigCatCookinAPI.Models.GPT.GPTResponses;
 using BigCatCookinAPI.Models.Recipes.DAO;
 using BigCatCookinAPI.Services.Interface;
+using BigCatCookinAPI.Utilities;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Data.SqlClient;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -25,13 +27,13 @@ public class BigCatCookingDb : IBigCatCookingDb
     }
 
     //TODO: Change IEnumerable Key Value to IEnumerable Dictionary
-    public bool BulkInsertTransactions(string dbConnection, IEnumerable<string> storedProcedures, IEnumerable<IEnumerable<KeyValuePair<string, object>>> parameters)
+    public bool BulkInsertTransactions(string dbConnection, IEnumerable<string> storedProcedures, IEnumerable<Dictionary<string, object>> parameters)
     {
         return CommitBulkInsert(GetBulkCommands(dbConnection, storedProcedures, parameters));
     }
 
     //TODO: Change IEnumerable Key Value to IEnumerable Dictionary
-    IList<SqlCommand> GetBulkCommands(string dbConnection, IEnumerable<string> storedProcedures, IEnumerable<IEnumerable<KeyValuePair<string, object>>> parameters)
+    IList<SqlCommand> GetBulkCommands(string dbConnection, IEnumerable<string> storedProcedures, IEnumerable<Dictionary<string, object>> parameters)
     {
         if(storedProcedures.Count() != parameters.Count())
         {
@@ -39,7 +41,7 @@ public class BigCatCookingDb : IBigCatCookingDb
         }
 
         string[] _storedProcedures = storedProcedures.ToArray();
-        IEnumerable<KeyValuePair<string, object>>[] keyValuePairs= parameters.ToArray();
+        Dictionary<string, object>[] keyValuePairs = parameters.ToArray();
 
         try
         {
@@ -53,16 +55,17 @@ public class BigCatCookingDb : IBigCatCookingDb
                 {
                     for(int x = 0; x < _storedProcedures.Length; x++)
                     {
+                        Dictionary<string, object> dict = keyValuePairs[x];
                         SqlTransaction transaction = dbConn.BeginTransaction();
 
-                        SqlCommand spCommand = dbConn.CreateCommand();
-                        spCommand.Connection = dbConn;
+                        SqlCommand spCommand = new SqlCommand(_storedProcedures[x], dbConn);
                         spCommand.Transaction = transaction;
 
                         spCommand.CommandType = System.Data.CommandType.StoredProcedure; 
-                        foreach(KeyValuePair<string, object> param in keyValuePairs[x])
+
+                        foreach (string key in dict.Keys)
                         {
-                            spCommand.Parameters.Add(new SqlParameter(param.Key, param.Value));
+                            spCommand.Parameters.Add(new SqlParameter(key, dict[key]));
                         }
                         spCommand.ExecuteNonQuery();
                         commands.Add(spCommand);
@@ -104,18 +107,17 @@ public class BigCatCookingDb : IBigCatCookingDb
         }
     }
 
-    //TODO: Change IEnumerable Key Value to IEnumerable Dictionary
-    public bool Delete(string dbConnection, string storedProcedure, IEnumerable<KeyValuePair<string, object>> parameters)
+    //TODO: Implement
+    public bool Delete(string dbConnection, string storedProcedure, Dictionary<string, object> parameters)
     {
         throw new NotImplementedException();
     }
 
-    //TODO: Change IEnumerable Key Value to IEnumerable Dictionary
-    public T GetSingle<T>(string dbConnection, string storedProcedure, IEnumerable<KeyValuePair<string, object>> parameters, Type type)
+    public T GetSingle<T>(string dbConnection, string storedProcedure, Dictionary<string, object> parameters, Type type)
     {
         try
         {
-            string[] fields = GetPropertiesFromObject(type);
+            string[] fields = DataUtilities.GetPropertiesFromObject(type);
             using (var dbConn = new SqlConnection(dbConnection))
             {
                 try
@@ -124,13 +126,12 @@ public class BigCatCookingDb : IBigCatCookingDb
                     SqlTransaction transaction = dbConn.BeginTransaction();
 
                     SqlCommand spCommand = new SqlCommand(storedProcedure, dbConn);
-                    spCommand.Connection = dbConn;
                     spCommand.Transaction = transaction;
 
                     spCommand.CommandType = System.Data.CommandType.StoredProcedure;
-                    foreach (KeyValuePair<string, object> param in parameters)
+                    foreach (string key in parameters.Keys)
                     {
-                        spCommand.Parameters.Add(new SqlParameter(param.Key, param.Value));
+                        spCommand.Parameters.Add(new SqlParameter(key, parameters[key]));
                     }
 
                     SqlDataReader reader = spCommand.ExecuteReader();
@@ -164,12 +165,11 @@ public class BigCatCookingDb : IBigCatCookingDb
         return default(T);
     }
 
-    //TODO: Change IEnumerable Key Value to IEnumerable Dictionary
-    public List<T> Get<T>(string dbConnection, string storedProcedure, IEnumerable<KeyValuePair<string, object>> parameters, Type type)
+    public List<T> Get<T>(string dbConnection, string storedProcedure, Dictionary<string, object> parameters, Type type)
     {
         try
         {
-            string[] fields = GetPropertiesFromObject(type); 
+            string[] fields = DataUtilities.GetPropertiesFromObject(type); 
             using (var dbConn = new SqlConnection(dbConnection))
             {
                 try
@@ -178,13 +178,12 @@ public class BigCatCookingDb : IBigCatCookingDb
                     SqlTransaction transaction = dbConn.BeginTransaction();
 
                     SqlCommand spCommand = new SqlCommand(storedProcedure, dbConn); 
-                    spCommand.Connection = dbConn;
                     spCommand.Transaction = transaction;
 
                     spCommand.CommandType = System.Data.CommandType.StoredProcedure;
-                    foreach (KeyValuePair<string, object> param in parameters)
+                    foreach (string key in parameters.Keys)
                     {
-                        spCommand.Parameters.Add(new SqlParameter(param.Key, param.Value));
+                        spCommand.Parameters.Add(new SqlParameter(key, parameters[key]));
                     }
 
                     List<T> resultSet = new List<T>(); 
@@ -200,7 +199,14 @@ public class BigCatCookingDb : IBigCatCookingDb
                         object obj = FormatterServices.GetUninitializedObject(type);
                         foreach (string key in result.Keys)
                         {
-                            obj.GetType().GetProperty(key).SetValue(obj, result[key], null);
+                            if (result[key].GetType() == typeof(double))
+                            {
+                                obj.GetType().GetProperty(key).SetValue(obj, Convert.ToSingle(result[key]), null);
+                            }
+                            else
+                            {
+                                obj.GetType().GetProperty(key).SetValue(obj, result[key], null);
+                            }
                         }
                         resultSet.Add((T)obj);
                     }
@@ -219,8 +225,7 @@ public class BigCatCookingDb : IBigCatCookingDb
         }
     }
 
-    //TODO: Change IEnumerable Key Value to IEnumerable Dictionary
-    public bool Insert(string dbConnection, string storedProcedure, IEnumerable<KeyValuePair<string, object>> parameters)
+    public bool Insert(string dbConnection, string storedProcedure, Dictionary<string, object> parameters)
     {
         try
         {
@@ -229,17 +234,17 @@ public class BigCatCookingDb : IBigCatCookingDb
                 dbConn.Open();
                 SqlTransaction transaction = dbConn.BeginTransaction();
 
-                SqlCommand spCommand = dbConn.CreateCommand();
-                spCommand.Connection = dbConn;
+                SqlCommand spCommand = new SqlCommand(storedProcedure, dbConn);
                 spCommand.Transaction = transaction;
 
                 spCommand.CommandType = System.Data.CommandType.StoredProcedure;
-                foreach (KeyValuePair<string, object> param in parameters)
+                foreach (string key in parameters.Keys)
                 {
-                    spCommand.Parameters.Add(new SqlParameter(param.Key, param.Value));
+                    spCommand.Parameters.Add(new SqlParameter(key, parameters[key]));
                 }
                 spCommand.ExecuteNonQuery();
                 transaction.Commit();
+                dbConn.Close();
                 return true; 
             }
         }
@@ -249,22 +254,50 @@ public class BigCatCookingDb : IBigCatCookingDb
         }
     }
 
-    //TODO: Change IEnumerable Key Value to IEnumerable Dictionary
-    public string InsertGetId(string dbConnection, string storedProcedure, IEnumerable<KeyValuePair<string, object>> parameters)
+    public Guid InsertGetId(string dbConnection, string storedProcedure, Dictionary<string, object> parameters)
     {
-        throw new NotImplementedException();
-    }
-
-    private static string[] GetPropertiesFromObject(Type type)
-    {
-        BindingFlags bindingFlags = BindingFlags.Public |
-                                    BindingFlags.Instance;
-
-        List<string> properties = new List<string>(); 
-        foreach (PropertyInfo info in type.GetProperties(bindingFlags))
+        try
         {
-            properties.Add(info.Name); 
+            using (var dbConn = new SqlConnection(dbConnection))
+            {
+                try
+                {
+                    dbConn.Open();
+                    SqlTransaction transaction = dbConn.BeginTransaction();
+
+                    SqlCommand spCommand = new SqlCommand(storedProcedure, dbConn);
+                    spCommand.Transaction = transaction;
+
+                    spCommand.CommandType = System.Data.CommandType.StoredProcedure;
+                    foreach (string key in parameters.Keys)
+                    {
+                        spCommand.Parameters.Add(new SqlParameter(key, parameters[key]));
+                    }
+
+                    SqlDataReader reader = spCommand.ExecuteReader();
+
+                    Guid returnVal = new Guid(); 
+
+                    while (reader.Read())
+                    {
+                         returnVal = (Guid)reader[0];
+                    }
+                    reader.Close();
+                    transaction.Commit(); 
+                    dbConn.Close();
+
+                    return returnVal;
+                }
+                catch (Exception e)
+                {
+                    dbConn.Close();
+                    throw e;
+                }
+            }
         }
-        return properties.ToArray(); 
+        catch (Exception e)
+        {
+            throw e; 
+        }
     }
 }
